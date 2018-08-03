@@ -1,12 +1,44 @@
 // Example code from https://techtutorialsx.com/2016/10/22/esp8266-webserver-getting-query-parameters/
-
+    AND
+    bbx10/ESPWebForm.ino https://gist.github.com/bbx10/5a2885a700f30af75fc5 
 //
 
 
-#include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h> //??
+#include <WiFiClient.h> //??
 #include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
 
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
+MDNSResponder mdns;
+
+
+const char INDEX_HTML[] =
+  "<!DOCTYPE HTML>"
+  "<html>"
+  "<head>"
+  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0\">"
+  "<title>ESP8266 Web Form Demo</title>"
+  "<style>"
+  "\"body { background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000; }\""
+  "</style>"
+  "</head>"
+  "<body>"
+  "<h1>ESP8266 Web Form Demo</h1>"
+  "<FORM action=\"/\" method=\"post\">"
+  "<P>"
+  "LED<br>"
+  "<INPUT type=\"radio\" name=\"LED\" value=\"1\">On<BR>"
+  "<INPUT type=\"radio\" name=\"LED\" value=\"0\">Off<BR>"
+  "<INPUT type=\"submit\" value=\"Send\"> <INPUT type=\"reset\">"
+  "</P>"
+  "</FORM>"
+  "</body>"
+  "</html>";
+
+
+//  example send static HTML page
+//  server.send(200, "text/html", INDEX_HTML);
 
 
 
@@ -29,7 +61,6 @@ void handleGenericArgs() { //Handler
 }
 
 
-
 void handleSpecificArg() {
 
   String message = "";
@@ -49,6 +80,15 @@ void handleSpecificArg() {
 
 }
 
+// example connection close
+void returnOK()
+{
+  server.sendHeader("Connection", "close");
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "text/plain", "OK\r\n");
+}
+
+
 
 void setup() {
 
@@ -65,6 +105,10 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());  //Print the local IP to access the server
 
+  if (mdns.begin("esp8266WebForm", WiFi.localIP())) {
+    Serial.println("MDNS responder started");
+  }
+  
   server.on(" / genericArgs", handleGenericArgs); //Associate the handler function to the path
   server.on(" / specificArgs", handleSpecificArg); //Associate the handler function to the path
 

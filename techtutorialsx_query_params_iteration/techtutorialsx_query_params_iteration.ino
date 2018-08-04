@@ -12,33 +12,30 @@
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
 MDNSResponder mdns;
 
-
-const char INDEX_HTML[] =
-  "<!DOCTYPE HTML>"
-  "<html>"
-  "<head>"
-  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0\">"
-  "<title>ESP8266 Web Form Demo</title>"
-  "<style>"
-  "\"body { background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000; }\""
-  "</style>"
-  "</head>"
-  "<body>"
-  "<h1>ESP8266 Web Form Demo</h1>"
-  "<FORM action=\"/\" method=\"post\">"
-  "<P>"
-  "LED<br>"
-  "<INPUT type=\"radio\" name=\"LED\" value=\"1\">On<BR>"
-  "<INPUT type=\"radio\" name=\"LED\" value=\"0\">Off<BR>"
-  "<INPUT type=\"submit\" value=\"Send\"> <INPUT type=\"reset\">"
-  "</P>"
-  "</FORM>"
-  "</body>"
-  "</html>";
-
-
-//  example send static HTML page
-//  server.send(200, "text/html", INDEX_HTML);
+// Server root site
+const char INDEX_HTML[] PROGMEM = R"=====(
+   <!DOCTYPE HTML>
+  <html>
+  <head>
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale = 1.0, user-scalable=0">
+  <title>ESP8266 Web Form Demo</title>
+  <style>
+  body { background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000; }
+  </style>
+  </head>
+  <body>
+  <h1>ESPstuff Webform</h1>
+  <FORM method="post">
+  <P>LED<br>
+  <INPUT type="text" name="LED"><BR>
+  <INPUT type="text" name="LED"><BR>
+<INPUT type="checkbox" name="DHCP" value="true"><BR>
+  <INPUT type="submit" value="Send"> <INPUT type="reset">
+  </P>
+  </FORM>
+  </body>
+  </html>
+)=====";
 
 
 
@@ -56,29 +53,31 @@ void handleGenericArgs() { //Handler
 
   }
 
+  // For final version, where we present the correct root-site
+  //server.send(200, "text / plain", INDEX_HTML);     //Response to the HTTP request
+  
   server.send(200, "text / plain", message);     //Response to the HTTP request
-
 }
 
 
-void handleSpecificArg() {
-
-  String message = "";
-
-  if (server.arg("Temperature") == “”) {   //Parameter not found
-
-    message = "Temperature Argument not found";
-
-  } else {    //Parameter found
-
-    message = "Temperature Argument = ";
-    message += server.arg("Temperature");     //Gets the value of the query parameter
-
-  }
-
-  server.send(200, "text / plain", message);        //Returns the HTTP response
-
-}
+//void handleSpecificArg() {
+//
+//  String message = "";
+//
+//  if (server.arg("Temperature") == “”) {   //Parameter not found
+//
+//    message = "Temperature Argument not found";
+//
+//  } else {    //Parameter found
+//
+//    message = "Temperature Argument = ";
+//    message += server.arg("Temperature");     //Gets the value of the query parameter
+//
+//  }
+//
+//  server.send(200, "text / plain", message);        //Returns the HTTP response
+//
+//}
 
 // example connection close
 void returnOK()
@@ -109,11 +108,15 @@ void setup() {
     Serial.println("MDNS responder started");
   }
   
-  server.on(" / genericArgs", handleGenericArgs); //Associate the handler function to the path
-  server.on(" / specificArgs", handleSpecificArg); //Associate the handler function to the path
+  //server.on(" / specificArgs", handleSpecificArg); //Associate the handler function to the path
 
   server.begin();                                       //Start the server
   Serial.println("Server listening");
+
+
+  // 
+  server.on(" / genericArgs", handleGenericArgs); //Associate the handler function to the path
+ 
 
 }
 

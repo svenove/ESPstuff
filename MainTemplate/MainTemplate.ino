@@ -10,52 +10,6 @@
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
 MDNSResponder mdns;
 
-String macAdr = WiFi.macAddress();
-
-// Server root site
-const char INDEX_HTML[] = 
-   "<!DOCTYPE HTML>"
-"<html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale = 1.0, user-scalable=0\">"
-  "<title>ESP8266 Config</title>"
-  "<style type=\"text/css\">"
-    "body { background-color: #232B2B; color: #FFFFFF; }"
-    ".form-style-2 { max-width: 500px; padding: 20px 12px 10px 20px; font: 13px Arial, Helvetica, sans-serif; }"
-    ".form-style-2 label > span{ width: 100px; font-weight: bold; float: left; padding-top: 8px; padding-right: 5px; }"
-    ".form-style-2 span.required{ color:red; }"
-    "#static { display: none; }"
-    "input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }"
-  "</style><script>"
-  "function show1(){"
-  "// Get the checkbox"
-  "var checkBox = document.getElementById(\"staticcheck\");"
-  "if (checkBox.checked == true){"
-    "document.getElementById('static').style.display ='none';"
-  "} else {"
-    "document.getElementById('static').style.display ='block';"
-  "}"
-"}"
-  "</script></head>"
-"<body><center><h1>ESP8266 Config</h1></center>"
-  "<div class=\"form-style-2\">"
-    "<form action=\"/genericArgs\" method=\"POST\">"
-      "<span>Hostname <span class=\"required\">*</span></span>"
-  "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"\" required/><br />"
-      "<span>DHCP <span class=\"required\">*</span></span><INPUT type=\"checkbox\" id=\"staticcheck\" name=\"DHCP\" value=\"true\" onclick='show1();' checked ><br />"
-        "<div id=\"static\">"
-        "<span>IP address <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"ip\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-        "<span>Netmask <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"submask\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-        "<span>Gateway <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"gw\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-         "<span>DNS <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"dns\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-          "</div><hr>"
-      "<span>MQTT server <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_server\" value=\"\" required/><br />"
-      "<span>MQTT port <span class=\"required\">*</span></span><input type=\"tel\" min=\"1\" max=\"65535\" class=\"input-field\" name=\"mqtt_port\" value=\"\" required placeholder=\"8883\"/><br />"
-      "<span>MQTT username <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_user\" value=\"\" required/><br />"
-      "<span>MQTT password <span class=\"required\">*</span></span><input type=\"password\" class=\"input-field\" name=\"mqtt_pass\" value=\"\" required/><br />"
-      "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" placeholder:\"00:AA:11:BB:22:CC:33:DD\" value=\"\" required/><br />"
-      "<hr><span>Config available in regular mode?</span><INPUT type=\"checkbox\" name=\"configInSTA\" value=\"false\" /><br /><br />"
-      "<span>&nbsp;</span><input type=\"submit\" value=\"Send\" name=\"submit\" /> <INPUT type=\"reset\"><br /><br />"
-    "</form><hr><span>MAC-address: macAdr </span></div></body></html>";
-
 bool STAmode = true;
 
 void handleGenericArgs() { //Handler
@@ -86,6 +40,47 @@ void returnOK()
 }
 
 void handleRoot() {
+  // Server root site
+String INDEX_HTML = 
+   "<!DOCTYPE HTML>"
+"<html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale = 1.0, user-scalable=0\">"
+  "<title>ESP8266 Config</title>"
+  "<style type=\"text/css\">"
+    "body { background-color: #232B2B; color: #FFFFFF; }"
+    ".form-style-2 { max-width: 500px; padding: 20px 12px 10px 20px; font: 13px Arial, Helvetica, sans-serif; }"
+    ".form-style-2 label > span{ width: 100px; font-weight: bold; float: left; padding-top: 8px; padding-right: 5px; }"
+    ".form-style-2 span.required{ color:red; }"
+    "#static { display: none; }"
+    "input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }"
+  "</style><script>"
+  "function showStatic(){"
+  "if (document.getElementById(\"staticcheck\").checked == true){"
+    "document.getElementById('static').style.display ='none';"
+  "} else {"
+    "document.getElementById('static').style.display ='block';"
+  "}"
+"}</script></head>"
+"<body><center><h1>ESP8266 Config</h1></center>"
+  "<div class=\"form-style-2\">"
+    "<form action=\"/genericArgs\" method=\"POST\">"
+      "<span>Hostname <span class=\"required\">*</span></span>"
+  "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"\" required/><br />"
+      "<span>DHCP</span><INPUT type=\"checkbox\" id=\"staticcheck\" name=\"DHCP\" value=\"true\" onclick='showStatic();' checked ><br />"
+        "<div id=\"static\">"
+        "<span>IP address <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"ip\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+        "<span>Netmask <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"submask\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+        "<span>Gateway <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"gw\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+         "<span>DNS <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"dns\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+          "</div><hr>"
+      "<span>MQTT server <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_server\" value=\"\" required/><br />"
+      "<span>MQTT port <span class=\"required\">*</span></span><input type=\"number\" min=\"1\" max=\"65535\" class=\"input-field\" name=\"mqtt_port\" value=\"\" required placeholder=\"8883\"/><br />"
+      "<span>MQTT username <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_user\" value=\"\" required/><br />"
+      "<span>MQTT password <span class=\"required\">*</span></span><input type=\"password\" class=\"input-field\" name=\"mqtt_pass\" value=\"\" required/><br />"
+      "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" size=\"60\" placeholder=\"00:AA:11:BB:22:CC:33:DD\" value=\"\" required/><br />"
+      "<hr><span>Config available in regular mode?</span><INPUT type=\"checkbox\" name=\"configInSTA\" value=\"false\" /><br /><br />"
+      "<span>&nbsp;</span><input type=\"submit\" value=\"Send\" name=\"submit\" /> <INPUT type=\"reset\"><br /><br />"
+    "</form><hr><span>MAC-address: " + WiFi.macAddress() + "</span></div></body></html>";
+  
   server.send(200, "text/html", INDEX_HTML);
 }
 

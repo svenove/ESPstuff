@@ -1,13 +1,35 @@
+//      ESPstuff NodeMCU
+
 // Example code from https://techtutorialsx.com/2016/10/22/esp8266-webserver-getting-query-parameters/
 //    AND
 //    bbx10/ESPWebForm.ino https://gist.github.com/bbx10/5a2885a700f30af75fc5 
 
-#include <ESP8266WiFi.h> //??
+
+
+// Defaults in AP-mode
+  //IP    192.168.4.1
+  //SSID  ESPstuff_01
+  //PASS  keepITsecret
+
+  
+#include <DoubleResetDetector.h> // https://github.com/datacute/DoubleResetDetector
+#include <ESP8266WiFi.h>
 #include <WiFiClient.h> //??
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
 #include <DHTesp.h> //https://github.com/beegee-tokyo/DHTesp
+
+//    Double Reset detector
+// Number of seconds after reset during which a 
+// subseqent reset will be considered a double reset.
+#define DRD_TIMEOUT 10
+
+// RTC Memory Address for the DoubleResetDetector to use
+#define DRD_ADDRESS 0
+
+DoubleResetDetector drd(DRD_TIMEOUT, DRD_ADDRESS);
+
 
 //    Webserver and DNS
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
@@ -21,9 +43,12 @@ float temperature = 0;
 
 //    WIFI mode
 bool STAmode = true;
+// AP mode default values
+const char *ssid = "ESPstuff_01";        
+const char *wifiappass = "keepITsecret";
 
 
-
+//    Generic HTTP arg handler
 void handleGenericArgs() { //Handler
   String message = "Number of args received: ";
   message += server.args();            //Get number of parameters
@@ -127,6 +152,7 @@ void getTempHum() {
 
   
 void setupSTA() {
+  Serial.println("Connecting to WIFI-network");
   WiFi.begin("SSID", "password"); //Connect to the WiFi network
 
   while (WiFi.status() != WL_CONNECTED) { //Wait for connection
@@ -137,7 +163,7 @@ void setupSTA() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());  //Print the local IP to access the server
 
-  if (mdns.begin("esp8266WebForm", WiFi.localIP())) {
+  if (mdns.begin("espSTUFF", WiFi.localIP())) {
     Serial.println("MDNS responder started");
   }
   
@@ -149,9 +175,18 @@ void setupSTA() {
   server.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
 }
 
+
 void setupAP() {
-  
+  Serial.print("Setting up soft-AP ... ");
+  boolean result = WiFi.softAP(ssid, wifiappass);
+  if(result == true) {
+    Serial.println("AP-mode entered successfully");
+  }
+  else {
+    Serial.println("Failed to set up wifi in AP-mode!");
+  }
 }
+
 
 void loopSTA() {
   server.handleClient();    //Handling of incoming requests
@@ -166,14 +201,27 @@ void setup() {
   Serial.begin(115200);
   dht.setup(2, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
 
-  
-  if (STAmode) {
+  //  if STAmode true and double reset NOT detected, enter STAmode  
+  if (STAmode && !drd.detectDoubleReset()) {
+
+    Serial.println("Double Reset Detected, setting builtin LED to high");
+    digitalWrite(LED_BUILTIN, HIGH);
+    
+    // Configure WIFI STA
     setupSTA();
   }
+    
+    // Configure AP-mode
   else {
+    if (drd.detectDoubleReset()) {
+      Serial.println("Double Reset Detected");
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    
     setupAP();
-  }  
-  
+    
+    }
+ 
 } // end setup
 
 
@@ -191,6 +239,8 @@ void loop() {
   Serial.print(temperature);
    
   //    WIFI MODE
+
+ 
   if (STAmode) {
     loopSTA();
   }

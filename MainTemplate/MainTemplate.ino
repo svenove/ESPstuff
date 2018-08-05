@@ -17,7 +17,8 @@
 #include <WiFiClient.h> //??
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
-
+#include <ArduinoJson.h>
+#include <FS.h>
 #include <DHTesp.h> //https://github.com/beegee-tokyo/DHTesp
 
 //    Double Reset detector
@@ -40,13 +41,25 @@ DHTesp dht;
 unsigned long previousMillis = 0;
 float humidity = 0;
 float temperature = 0;
+const int dhtpin = 1;
 
 //    WIFI mode
 bool STAmode = true;
 // AP mode default values
-const char *ssid = "ESPstuff_01";        
-const char *wifiappass = "keepITsecret";
+const char *apssid = "ESPstuff_01";        
+const char *apwifipass = "keepITsecret";
+String ssid = "";
+String wifipass = "";
 
+//    MQTT 
+char *mqttServer = "";      
+char *mqttPort = "";
+char *subscription = "";
+String mqttClientName = "mini-display-"; // Should be hostname??
+
+
+//    LED PINS
+const int PIN_LED = 2; // D4 on NodeMCU and WeMos. Controls the onboard LED
 
 //    Generic HTTP arg handler
 void handleGenericArgs() { //Handler
@@ -150,6 +163,97 @@ void getTempHum() {
   }
 }
 
+
+//    JSON and Filesystem
+bool fsMounted = false;
+
+void initFS()
+{
+  //read configuration from FS json
+  Serial.println("mounting FS...");
+
+  fsMounted = SPIFFS.begin();
+  if (fsMounted) {
+    Serial.println("Mounted file system");
+    if (SPIFFS.exists("/config.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+      File configFile = SPIFFS.open("/config.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
+
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buf.get());
+        json.printTo(Serial);
+        Serial.println();
+        if (json.success()) {
+          Serial.println("parsed json");
+
+          if (json.containsKey("mqtt_server")) strcpy(mqttServer, json["mqtt_server"]);
+          if (json.containsKey("mqtt_port")) strcpy(mqttPort, json["mqtt_port"]);
+          if (json.containsKey("subscription")) strcpy(subscription, json["subscription"]);
+
+        } else {
+          Serial.println("failed to load json config");
+        }
+      }
+    } else {
+      Serial.println("/config.json not found");
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }
+  //end read
+  
+  //custom_mqtt_server = new WiFiManagerParameter("mqtt_server", "MQTT Server", mqttServer, 40);
+  //custom_mqtt_port = new WiFiManagerParameter("mqtt_port", "MQTT Port", mqttPort, 6);
+  //custom_subscription = new WiFiManagerParameter("subscription", "MQTT Subscription", subscription, 60);
+}
+
+//callback notifying us of the need to save config
+void saveConfigCallback() {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
+}
+
+//callback notifying us of the need to save config
+void saveConfig() {
+  if (fsMounted) {
+
+    Serial.println("Saving config");
+  
+    //read updated parameters
+    strcpy(mqttServer, custom_mqtt_server->getValue());
+    strcpy(mqttPort, custom_mqtt_port->getValue());
+    strcpy(subscription, custom_subscription->getValue());
+  
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["mqtt_server"] = mqttServer;
+    json["mqtt_port"] = mqttPort;
+    json["subscription"] = subscription;
+  
+    File configFile = SPIFFS.open("/config.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open config file for writing");
+    } else {
+      json.printTo(Serial);
+      Serial.println();
+      json.printTo(configFile);
+      configFile.close();
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }
+  //end save
+  shouldSaveConfig = false;
+  drd.stop();
+}
+
   
 void setupSTA() {
   Serial.println("Connecting to WIFI-network");
@@ -178,7 +282,7 @@ void setupSTA() {
 
 void setupAP() {
   Serial.print("Setting up soft-AP ... ");
-  boolean result = WiFi.softAP(ssid, wifiappass);
+  boolean result = WiFi.softAP(apssid, apwifipass);
   if(result == true) {
     Serial.println("AP-mode entered successfully");
   }
@@ -199,8 +303,10 @@ void loopAP() {
 
 void setup() {  
   Serial.begin(115200);
-  dht.setup(2, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
+  dht.setup(dhtpin, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
 
+  initFS();
+  
   //  if STAmode true and double reset NOT detected, enter STAmode  
   if (STAmode && !drd.detectDoubleReset()) {
 
@@ -227,6 +333,9 @@ void setup() {
 
 void loop() {
 
+  //    Double reset detection enabled
+  drd.loop();
+  
   //    TEMPERATURE AND HUMIDITY
   // Read DHT sensordata
   getTempHum();

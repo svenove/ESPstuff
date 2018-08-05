@@ -7,10 +7,22 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
+#include <DHTesp.h> //https://github.com/beegee-tokyo/DHTesp
+
+//    Webserver and DNS
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
 MDNSResponder mdns;
 
+//    DHT
+DHTesp dht;
+unsigned long previousMillis = 0;
+float humidity = 0;
+float temperature = 0;
+
+//    WIFI mode
 bool STAmode = true;
+
+
 
 void handleGenericArgs() { //Handler
   String message = "Number of args received: ";
@@ -65,6 +77,10 @@ String INDEX_HTML =
     "<form action=\"/genericArgs\" method=\"POST\">"
       "<span>Hostname <span class=\"required\">*</span></span>"
   "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"\" required/><br />"
+  "<span>WIFI SSID <span class=\"required\">*</span></span>"
+  "<input type=\"text\" class=\"input-field\" name=\"ssid\" value=\"\" /><br />"
+  "<span>Password <span class=\"required\">*</span></span>"
+  "<input type=\"text\" class=\"input-field\" name=\"password\" value=\"\" /><br />"
       "<span>DHCP</span><INPUT type=\"checkbox\" id=\"staticcheck\" name=\"DHCP\" value=\"true\" onclick='showStatic();' checked ><br />"
         "<div id=\"static\">"
         "<span>IP address <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"ip\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
@@ -79,23 +95,37 @@ String INDEX_HTML =
       "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" size=\"60\" placeholder=\"00:AA:11:BB:22:CC:33:DD\" value=\"\" required/><br />"
       "<hr><span>Config available in regular mode?</span><INPUT type=\"checkbox\" name=\"configInSTA\" value=\"false\" /><br /><br />"
       "<span>&nbsp;</span><input type=\"submit\" value=\"Send\" name=\"submit\" /> <INPUT type=\"reset\"><br /><br />"
-    "</form><hr><span>MAC-address: " + WiFi.macAddress() + "</span></div></body></html>";
+    "</form><hr><span>MAC-address: " + WiFi.macAddress() + "</span><span>Temperature: " + temperature + "</span></div></body></html>";
   
   server.send(200, "text/html", INDEX_HTML);
 }
 
 
 
-void setup() {  
-  Serial.begin(115200);
-  if (STAmode) {
-    setupSTA();
+void getTempHum() {
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  
+  //Library has function for delaying according to sensor sampling time
+  //Not used, as this is blocking, instead of millis
+  //delay(dht.getMinimumSamplingPeriod()
+  
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis > 2000) { //every 2 seconds this is true and readings are updated
+
+    // Read temperature and humidity
+    humidity = dht.getHumidity();
+    temperature = dht.getTemperature();
+    previousMillis = currentMillis;
   }
-  else {
-    setupAP();
-  }  
+  
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(humidity) || isnan(temperature)) {
+    Serial.println("Failed to read from DHT sensor!");
+  }
 }
 
+  
 void setupSTA() {
   WiFi.begin("SSID", "password"); //Connect to the WiFi network
 
@@ -111,7 +141,7 @@ void setupSTA() {
     Serial.println("MDNS responder started");
   }
   
-  //server.on("/specificArgs", handleSpecificArg); //Associate the handler function to the path
+  
   server.begin();                                       //Start the server
   Serial.println("Server listening");
 
@@ -123,17 +153,6 @@ void setupAP() {
   
 }
 
-
-
-
-void loop() {
-  if (STAmode) {
-    loopSTA();
-  }
-  else {
-    loopAP();
-  }
-}
 void loopSTA() {
   server.handleClient();    //Handling of incoming requests
 }
@@ -141,3 +160,43 @@ void loopSTA() {
 void loopAP() {
   
 }
+
+
+void setup() {  
+  Serial.begin(115200);
+  dht.setup(2, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
+
+  
+  if (STAmode) {
+    setupSTA();
+  }
+  else {
+    setupAP();
+  }  
+  
+} // end setup
+
+
+void loop() {
+
+  //    TEMPERATURE AND HUMIDITY
+  // Read DHT sensordata
+  getTempHum();
+  
+  //Example show temp + hum
+  Serial.println("Humidity: ");
+  Serial.print(humidity);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+   
+  //    WIFI MODE
+  if (STAmode) {
+    loopSTA();
+  }
+  else {
+    loopAP();
+  }
+  
+} // end loop
+

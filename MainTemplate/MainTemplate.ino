@@ -6,22 +6,27 @@
 
 
 
-// Defaults in AP-mode
-  //IP    192.168.4.1
-  //SSID  ESPstuff_01
-  //PASS  keepITsecret
+/***********************************************
+*  Defaults in AP-mode
+*    IP    192.168.4.1
+*    SSID  ESPstuff_01
+*    PASS  keepITsecret
+***********************************************/
 
   
-#include <DoubleResetDetector.h> // https://github.com/datacute/DoubleResetDetector
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h> //??
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
-#include <ArduinoJson.h>
-#include <FS.h>
-#include <DHTesp.h> //https://github.com/beegee-tokyo/DHTesp
+#include <DoubleResetDetector.h>  // https://github.com/datacute/DoubleResetDetector
+#include <ESP8266WiFi.h>          // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi
+#include <WiFiClient.h>           // Try to compile without it, don't think we need it ??
+#include <ESP8266WebServer.h>     // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer
+#include <ESP8266mDNS.h>          // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266mDNS
+#include <ArduinoJson.h>          // https://github.com/bblanchon/ArduinoJson
+#include <FS.h>                   // https://github.com/esp8266/Arduino/blob/master/cores/esp8266/FS.h
+#include <DHTesp.h>               // https://github.com/beegee-tokyo/DHTesp
 
-//    Double Reset detector
+
+/***********************************************
+*  Double Reset detector
+***********************************************/
 // Number of seconds after reset during which a 
 // subseqent reset will be considered a double reset.
 #define DRD_TIMEOUT 10
@@ -32,17 +37,26 @@
 DoubleResetDetector drd(DRD_TIMEOUT, DRD_ADDRESS);
 
 
-//    Webserver and DNS
+/***********************************************
+*  Webserver and DNS
+***********************************************/
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
 MDNSResponder mdns;
 
-//    DHT
+
+/***********************************************
+*  DHT
+***********************************************/
 DHTesp dht;
 unsigned long previousMillis = 0;
 float humidity = 0;
 float temperature = 0;
 const int dhtpin = 1;
 
+
+/***********************************************
+*  Wifi Mode
+***********************************************/
 //    WIFI mode
 bool STAmode = true;
 // AP mode default values
@@ -51,20 +65,37 @@ const char *apwifipass = "keepITsecret";
 String ssid = "";
 String wifipass = "";
 
-//    MQTT 
+
+/***********************************************
+*  MQTT
+***********************************************/
 char *mqttServer = "";      
 char *mqttPort = "";
 char *subscription = "";
 String mqttClientName = "mini-display-"; // Should be hostname??
 
 
-//    LED PINS
-const int PIN_LED = 2; // D4 on NodeMCU and WeMos. Controls the onboard LED
+/***********************************************
+*  PIN-definitions
+***********************************************/
+const int PIN_LED = LED_BUILTIN; // D4 on NodeMCU and WeMos. Controls the onboard LED
+
 
 bool shouldSaveConfig = false;
 
-//    Generic HTTP arg handler
-void handleGenericArgs() { //Handler
+
+
+/*==============================================
+================================================
+*  HTTP-server stuff
+================================================
+===============================================*/
+
+/***********************************************
+*  Save data posted from the config-form.
+*  Config-form is available in AP-mode.
+***********************************************/
+void httpSavePOST() { //Handler
   String message = "Number of args received: ";
   message += server.args();            //Get number of parameters
   message += "\n";                            //Add a new line
@@ -84,14 +115,17 @@ void handleGenericArgs() { //Handler
 }
 
 
-// example connection close
-void returnOK()
-{
+// connection close
+// <<<<< Currently not in use, do we need it? >>>>>>
+void httpReturnOK() {
   server.sendHeader("Connection", "close");
   server.send(200, "text/plain", "OK\r\n");
 }
 
-void handleRoot() {
+/***********************************************
+*  Show config-form on webserver-root (/)
+***********************************************/
+void httpHandleRoot() {
   // Server root site
 String INDEX_HTML = 
    "<!DOCTYPE HTML>"
@@ -122,7 +156,7 @@ String INDEX_HTML =
 "}</script></head>"
 "<body><center><h1>ESP8266 Config</h1></center>"
   "<div class=\"form-style-2\">"
-    "<form action=\"/genericArgs\" method=\"POST\">"
+    "<form action=\"/savePOST\" method=\"POST\">"
       "<span>Hostname <span class=\"required\">*</span></span>"
   "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"\" required/><br />"
   "<span>WIFI SSID <span class=\"required\">*</span></span>"
@@ -152,6 +186,10 @@ String INDEX_HTML =
 
 
 
+
+/***********************************************
+*  DHT
+***********************************************/
 void getTempHum() {
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -176,11 +214,17 @@ void getTempHum() {
 }
 
 
-//    JSON and Filesystem
-bool fsMounted = false;
+/*==============================================
+================================================
+*  JSON and filesystem stuff
+================================================
+===============================================*/
 
-void initFS()
-{
+/***********************************************
+*  Read and load config from filsystem
+***********************************************/
+bool fsMounted = false;
+void initFS() {
   //read configuration from FS json
   Serial.println("mounting FS...");
 
@@ -220,11 +264,8 @@ void initFS()
     Serial.println("failed to mount FS");
   }
   //end read
-  
-  //custom_mqtt_server = new WiFiManagerParameter("mqtt_server", "MQTT Server", mqttServer, 40);
-  //custom_mqtt_port = new WiFiManagerParameter("mqtt_port", "MQTT Port", mqttPort, 6);
-  //custom_subscription = new WiFiManagerParameter("subscription", "MQTT Subscription", subscription, 60);
 }
+
 
 //callback notifying us of the need to save config
 void saveConfigCallback() {
@@ -232,7 +273,10 @@ void saveConfigCallback() {
   shouldSaveConfig = true;
 }
 
-//callback notifying us of the need to save config
+
+/***********************************************
+*  Write and save config to filsystem
+***********************************************/
 void saveConfig() {
   if (fsMounted) {
 
@@ -266,66 +310,15 @@ void saveConfig() {
   drd.stop();
 }
 
-  
-void setupSTA() {
-  Serial.println("Connecting to WIFI-network");
-  WiFi.begin("SSID", "password"); //Connect to the WiFi network
 
-  while (WiFi.status() != WL_CONNECTED) { //Wait for connection
-    delay(500);
-    Serial.println("Waiting to connect…");
-  }
-
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());  //Print the local IP to access the server
-
-  if (mdns.begin("espSTUFF", WiFi.localIP())) {
-    Serial.println("MDNS responder started");
-  }
-
-  dht.setup(dhtpin, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
-}
-
-
-void setupAP() {
-  Serial.print("Setting up soft-AP ... ");
-  boolean result = WiFi.softAP(apssid, apwifipass);
-  if(result == true) {
-    Serial.println("AP-mode entered successfully");
-  }
-  else {
-    Serial.println("Failed to set up wifi in AP-mode!");
-  }
-
-  server.begin();                                       //Start the server
-  Serial.println("Server listening");
-
-  server.on("/", handleRoot);
-  server.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
-}
-
-
-void loopSTA() {
-  //    TEMPERATURE AND HUMIDITY
-  // Read DHT sensordata
-  getTempHum();
-  
-  //Example show temp + hum
-  Serial.println("Humidity: ");
-  Serial.print(humidity);
-  Serial.print(" %\t");
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  
-  
-  delay(1000);
-}
-
-void loopAP() {
-  server.handleClient();    //Handling of incoming requests
-}
-
-
+/*==============================================
+================================================
+*  Default setup();
+*  Common setup is added here
+*  It will call separate setup-methods for AP and STA-mode
+*  Add spesific setup to setupAP() or setupSTA()
+================================================
+===============================================*/
 void setup() {  
   Serial.begin(115200);
   
@@ -355,11 +348,59 @@ void setup() {
 } // end setup
 
 
-void loop() {
+/***********************************************
+*  Setup-spesific for STA-mode
+***********************************************/
+void setupSTA() {
+  Serial.println("Connecting to WIFI-network");
+  WiFi.begin("SSID", "password"); //Connect to the WiFi network
 
-  //    Double reset detection enabled
-  drd.loop();
+  while (WiFi.status() != WL_CONNECTED) { //Wait for connection
+    delay(500);
+    Serial.println("Waiting to connect…");
+  }
+
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());  //Print the local IP to access the server
+
+  dht.setup(dhtpin, DHTesp::DHT22); // Connect DHT sensor
+}
+
+
+/***********************************************
+*  Setup-spesific for AP-mode
+***********************************************/
+void setupAP() {
+  Serial.print("Setting up soft-AP ... ");
+  if(WiFi.softAP(apssid, apwifipass)) {
+    Serial.println("AP-mode entered successfully");
     
+    if (mdns.begin("espSTUFF", WiFi.localIP())) {
+      Serial.println("MDNS responder started");
+    }
+
+    server.begin();                                       //Start the HTTP-server
+    Serial.println("Server listening");
+
+    server.on("/", httpHandleRoot);
+    server.on("/savePOST", httpSavePOST); //Associate the handler function to the path
+  }
+  else {
+    Serial.println("Failed to set up wifi in AP-mode!");
+  }
+}
+
+
+
+/*==============================================
+================================================
+*  Default loop();
+*  Common loop-code is added here
+*  It will call separate loop-methods for AP and STA-mode
+*  Add spesific loop-code to loopAP() or loopTA()
+================================================
+===============================================*/
+void loop() {    
   //    WIFI MODE
   if (STAmode) {
     loopSTA();
@@ -367,6 +408,35 @@ void loop() {
   else {
     loopAP();
   }
-  
 } // end loop
 
+
+/***********************************************
+*  Loop-spesific for STA-mode
+***********************************************/
+void loopSTA() {
+   //    Double reset detection enabled
+  drd.loop();
+  
+  //    TEMPERATURE AND HUMIDITY
+  // Read DHT sensordata
+  getTempHum();
+  
+  //Example show temp + hum
+  Serial.println("Humidity: ");
+  Serial.print(humidity);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  
+  
+  delay(1000);
+}
+
+
+/***********************************************
+*  Loop-spesific for AP-mode
+***********************************************/
+void loopAP() {
+  server.handleClient();    //Handling of incoming requests to HTTP-server
+}

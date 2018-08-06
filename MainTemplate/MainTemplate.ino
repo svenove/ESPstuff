@@ -61,6 +61,8 @@ String mqttClientName = "mini-display-"; // Should be hostname??
 //    LED PINS
 const int PIN_LED = 2; // D4 on NodeMCU and WeMos. Controls the onboard LED
 
+bool shouldSaveConfig = false;
+
 //    Generic HTTP arg handler
 void handleGenericArgs() { //Handler
   String message = "Number of args received: ";
@@ -109,6 +111,14 @@ String INDEX_HTML =
   "} else {"
     "document.getElementById('static').style.display ='block';"
   "}"
+  "function toggleShowPass(fieldID) {"
+    "var x = document.getElementById(fieldID);"
+    "if (x.type === \"password\") {"
+    "    x.type = \"text\";"
+    "} else {"
+    "    x.type = \"password\";"
+    "}"
+"}"
 "}</script></head>"
 "<body><center><h1>ESP8266 Config</h1></center>"
   "<div class=\"form-style-2\">"
@@ -116,9 +126,10 @@ String INDEX_HTML =
       "<span>Hostname <span class=\"required\">*</span></span>"
   "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"\" required/><br />"
   "<span>WIFI SSID <span class=\"required\">*</span></span>"
-  "<input type=\"text\" class=\"input-field\" name=\"ssid\" value=\"\" /><br />"
+  "<input type=\"text\" class=\"input-field\" name=\"ssid\" value=\"\" required /><br />"
   "<span>Password <span class=\"required\">*</span></span>"
-  "<input type=\"text\" class=\"input-field\" name=\"password\" value=\"\" /><br />"
+  "<input type=\"password\" class=\"input-field\" name=\"password\" min=\"8\" value=\"\" required /><br />"
+  "<input type=\"checkbox\" onclick=\"toggleShowPass('password')\">Show Password<br />"
       "<span>DHCP</span><INPUT type=\"checkbox\" id=\"staticcheck\" name=\"DHCP\" value=\"true\" onclick='showStatic();' checked ><br />"
         "<div id=\"static\">"
         "<span>IP address <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"ip\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
@@ -130,6 +141,7 @@ String INDEX_HTML =
       "<span>MQTT port <span class=\"required\">*</span></span><input type=\"number\" min=\"1\" max=\"65535\" class=\"input-field\" name=\"mqtt_port\" value=\"\" required placeholder=\"8883\"/><br />"
       "<span>MQTT username <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_user\" value=\"\" required/><br />"
       "<span>MQTT password <span class=\"required\">*</span></span><input type=\"password\" class=\"input-field\" name=\"mqtt_pass\" value=\"\" required/><br />"
+      "<input type=\"checkbox\" onclick=\"toggleShowPass('mqtt_pass')\">Show Password<br />"
       "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" size=\"60\" placeholder=\"00:AA:11:BB:22:CC:33:DD\" value=\"\" required/><br />"
       "<hr><span>Config available in regular mode?</span><INPUT type=\"checkbox\" name=\"configInSTA\" value=\"false\" /><br /><br />"
       "<span>&nbsp;</span><input type=\"submit\" value=\"Send\" name=\"submit\" /> <INPUT type=\"reset\"><br /><br />"
@@ -227,9 +239,9 @@ void saveConfig() {
     Serial.println("Saving config");
   
     //read updated parameters
-    strcpy(mqttServer, custom_mqtt_server->getValue());
-    strcpy(mqttPort, custom_mqtt_port->getValue());
-    strcpy(subscription, custom_subscription->getValue());
+    //strcpy(mqttServer, custom_mqtt_server->getValue());
+    //strcpy(mqttPort, custom_mqtt_port->getValue());
+    //strcpy(subscription, custom_subscription->getValue());
   
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
@@ -270,13 +282,8 @@ void setupSTA() {
   if (mdns.begin("espSTUFF", WiFi.localIP())) {
     Serial.println("MDNS responder started");
   }
-  
-  
-  server.begin();                                       //Start the server
-  Serial.println("Server listening");
 
-  server.on("/", handleRoot);
-  server.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
+  dht.setup(dhtpin, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
 }
 
 
@@ -289,28 +296,45 @@ void setupAP() {
   else {
     Serial.println("Failed to set up wifi in AP-mode!");
   }
+
+  server.begin();                                       //Start the server
+  Serial.println("Server listening");
+
+  server.on("/", handleRoot);
+  server.on("/genericArgs", handleGenericArgs); //Associate the handler function to the path
 }
 
 
 void loopSTA() {
-  server.handleClient();    //Handling of incoming requests
+  //    TEMPERATURE AND HUMIDITY
+  // Read DHT sensordata
+  getTempHum();
+  
+  //Example show temp + hum
+  Serial.println("Humidity: ");
+  Serial.print(humidity);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  
+  
+  delay(1000);
 }
 
 void loopAP() {
-  
+  server.handleClient();    //Handling of incoming requests
 }
 
 
 void setup() {  
   Serial.begin(115200);
-  dht.setup(dhtpin, DHTesp::DHT22); // Connect DHT sensor to GPIO 2
-
+  
   initFS();
   
   //  if STAmode true and double reset NOT detected, enter STAmode  
   if (STAmode && !drd.detectDoubleReset()) {
 
-    Serial.println("Double Reset Detected, setting builtin LED to high");
+    Serial.println("Double Reset NOT Detected, setting builtin LED to high");
     digitalWrite(LED_BUILTIN, HIGH);
     
     // Configure WIFI STA
@@ -322,10 +346,10 @@ void setup() {
     if (drd.detectDoubleReset()) {
       Serial.println("Double Reset Detected");
       digitalWrite(LED_BUILTIN, LOW);
+      STAmode = true;
     }
     
     setupAP();
-    
     }
  
 } // end setup
@@ -335,21 +359,8 @@ void loop() {
 
   //    Double reset detection enabled
   drd.loop();
-  
-  //    TEMPERATURE AND HUMIDITY
-  // Read DHT sensordata
-  getTempHum();
-  
-  //Example show temp + hum
-  Serial.println("Humidity: ");
-  Serial.print(humidity);
-  Serial.print(" %\t");
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-   
+    
   //    WIFI MODE
-
- 
   if (STAmode) {
     loopSTA();
   }

@@ -10,6 +10,11 @@ void setup() {
   Serial.begin(115200);
   
   initFS();
+  
+  // Prepare built-in LEDs 
+  // (https://lowvoltage.github.io/2017/07/09/Onboard-LEDs-NodeMCU-Got-Two)
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(D4, OUTPUT);
 
   // Double reset detected - AP-mode
   if (drd.detectDoubleReset()) {

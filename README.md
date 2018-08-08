@@ -19,7 +19,7 @@ Many of them also exposes the webinterface in normal mode, which is bad for secu
 
 ### Tasks
 - [x] Implement [ESP8266WebServer](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer)
-- [ ] Implement [DoubleResetDetector](https://github.com/datacute/DoubleResetDetector) for entering config-mode (see examples [here](https://github.com/kentaylor/WiFiManager/tree/master/examples/ConfigOnDoubleReset) and [here](https://github.com/witnessmenow/arduino-youtube-api/blob/master/examples/ESP8266/ChannelStatisticsWithWifiManagerAndDoubleReset/ChannelStatisticsWithWifiManagerAndDoubleReset.ino))
+- [x] Implement [DoubleResetDetector](https://github.com/datacute/DoubleResetDetector) for entering config-mode (see examples [here](https://github.com/kentaylor/WiFiManager/tree/master/examples/ConfigOnDoubleReset) and [here](https://github.com/witnessmenow/arduino-youtube-api/blob/master/examples/ESP8266/ChannelStatisticsWithWifiManagerAndDoubleReset/ChannelStatisticsWithWifiManagerAndDoubleReset.ino))
 - [ ] Implement [ArduinoJSON](https://github.com/bblanchon/ArduinoJson) for saving/loading data using [FS.h](https://github.com/esp8266/Arduino/blob/master/cores/esp8266/FS.h)
 - [ ] Use the two onboard LEDs to indicate config-mode, connected to wifi, etc. See [example](https://lowvoltage.github.io/2017/07/09/Onboard-LEDs-NodeMCU-Got-Two)
 - [ ] Implement encrypted MQTT (based on [this](https://github.com/adafruit/Adafruit_MQTT_Library/blob/master/examples/adafruitio_secure_esp8266/adafruitio_secure_esp8266.ino) example)

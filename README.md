@@ -26,4 +26,4 @@ Many of them also exposes the webinterface in normal mode, which is bad for secu
 - [x] Implement support for DHT-sensors using [DHTesp](https://github.com/beegee-tokyo/DHTesp)
 
 ### Hardware
-* NodeMCU v2 (LoLin)
+* NodeMCU v2 (Amica)

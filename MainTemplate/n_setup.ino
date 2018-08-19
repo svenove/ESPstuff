@@ -8,6 +8,7 @@
 ===============================================*/
 void setup() {  
   Serial.begin(115200);
+  while (!Serial) continue;
   
   initFS();
   
@@ -29,6 +30,7 @@ void setup() {
   else {
     Serial.println("Double Reset NOT Detected, setting builtin LED to high");
     digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(D4, HIGH);
     
     // Configure WIFI STA
     setupSTA();
@@ -42,7 +44,19 @@ void setup() {
 ***********************************************/
 void setupSTA() {
   Serial.println("Connecting to WIFI-network");
-  WiFi.begin("SSID", "password"); //Connect to the WiFi network
+  char charSSID[ssid.length()+1];
+  ssid.toCharArray(charSSID, ssid.length()+1);
+  
+  char charPwd[pwd_Wifipass.length()+1];
+  pwd_Wifipass.toCharArray(charPwd, pwd_Wifipass.length()+1);
+
+  Serial.print("SSID: ");
+  Serial.println(charSSID);
+  Serial.print("WifiPwd: ");
+  Serial.println(charPwd);
+
+  WiFi.hostname(hostname);
+  WiFi.begin(charSSID, charPwd); //Connect to the WiFi network
 
   while (WiFi.status() != WL_CONNECTED) { //Wait for connection
     delay(500);
@@ -72,9 +86,12 @@ void setupAP() {
   Serial.print("Setting up soft-AP ... ");
   if(WiFi.softAP(apssid, apwifipass)) {
     Serial.println("AP-mode entered successfully");
-    
-    if (mdns.begin("espSTUFF", WiFi.localIP())) {
-      Serial.println("MDNS responder started");
+    Serial.println(WiFi.softAPIP());
+
+    char charBuf[hostname.length()+1];
+    hostname.toCharArray(charBuf, hostname.length());
+    if (mdns.begin(charBuf, WiFi.softAPIP())) {
+      Serial.println("MDNS responder started: " + hostname);
     }
 
     server.on("/", httpHandleRoot);

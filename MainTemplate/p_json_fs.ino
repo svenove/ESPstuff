@@ -33,9 +33,9 @@ void initFS() {
         if (json.success()) {
           Serial.println("parsed json");
 
-          if (json.containsKey("mqtt_server")) strcpy(mqttServer, json["mqtt_server"]);
-          if (json.containsKey("mqtt_port")) strcpy(mqttPort, json["mqtt_port"]);
-          if (json.containsKey("subscription")) strcpy(subscription, json["subscription"]);
+          if (json.containsKey("hostname")) hostname = json["hostname"].as<String>();
+          if (json.containsKey("ssid")) ssid = json["ssid"].as<String>();
+          if (json.containsKey("pwd_Wifipass")) pwd_Wifipass = json["pwd_Wifipass"].as<String>();
 
         } else {
           Serial.println("failed to load json config");
@@ -73,9 +73,9 @@ void saveConfig() {
   
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-    json["mqtt_server"] = mqttServer;
-    json["mqtt_port"] = mqttPort;
-    json["subscription"] = subscription;
+    json["hostname"] = hostname;
+    json["ssid"] = ssid;
+    json["pwd_Wifipass"] = pwd_Wifipass;
   
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {

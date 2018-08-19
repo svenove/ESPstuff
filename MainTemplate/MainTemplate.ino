@@ -61,14 +61,22 @@ bool STAmode = true;
 // AP mode default values
 const char *apssid = "ESPstuff_01";        
 const char *apwifipass = "keepITsecret";
+//String ssid = "";
+//String wifipass = "";
+
+
+/***********************************************
+*  Config from website
+***********************************************/
+String hostname = "ESPstuff";
 String ssid = "";
-String wifipass = "";
+String pwd_Wifipass = "";
 
 
 /***********************************************
 *  MQTT
 ***********************************************/
-char *mqttServer = "";      
+char *mqttServer = "";
 char *mqttPort = "";
 char *subscription = "";
 String mqttClientName = "mini-display-"; // Should be hostname??

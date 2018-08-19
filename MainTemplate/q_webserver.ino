@@ -12,9 +12,9 @@ void httpHandleRoot() {
   // Server root site
 String INDEX_HTML = 
    "<!DOCTYPE HTML>"
-"<html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale = 1.0, user-scalable=0\">"
+"<html lang=\"en\"><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale = 1.0, user-scalable=0\">"
   "<title>ESP8266 Config</title>"
-  "<style type=\"text/css\">"
+  "<style>"
     "body { background-color: #232B2B; color: #FFFFFF; }"
     ".form-style-2 { max-width: 500px; padding: 20px 12px 10px 20px; font: 13px Arial, Helvetica, sans-serif; }"
     ".form-style-2 label > span{ width: 100px; font-weight: bold; float: left; padding-top: 8px; padding-right: 5px; }"
@@ -41,11 +41,11 @@ String INDEX_HTML =
   "<div class=\"form-style-2\">"
     "<form action=\"/savePOST\" method=\"POST\">"
       "<span>Hostname <span class=\"required\">*</span></span>"
-  "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"\" required/><br />"
+  "<input type=\"text\" class=\"input-field\" name=\"hostname\" value=\"" + hostname + "\" required/><br />"
   "<span>WIFI SSID <span class=\"required\">*</span></span>"
-  "<input type=\"text\" class=\"input-field\" name=\"ssid\" value=\"\" required /><br />"
-  "<span>Password <span class=\"required\">*</span></span>"
-  "<input type=\"password\" class=\"input-field\" name=\"pwd_Wifipass\" id=\"wifipass\" min=\"8\" value=\"\" required /><br />"
+  "<input type=\"text\" class=\"input-field\" name=\"ssid\" value=\"" + ssid + "\" required /><br />"
+  "<span>Password </span>"
+  "<input type=\"password\" class=\"input-field\" name=\"pwd_Wifipass\" id=\"wifipass\" value=\"\" /><br />"
   "<input type=\"checkbox\" onclick=\"toggleShowPass('wifipass')\">Show Password<br />"
       "<span>DHCP</span><INPUT type=\"checkbox\" id=\"staticcheck\" name=\"DHCP\" value=\"true\" onclick='showStatic();' checked ><br />"
         "<div id=\"static\">"
@@ -57,10 +57,10 @@ String INDEX_HTML =
       "<span>MQTT server <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_server\" value=\"\" required/><br />"
       "<span>MQTT port <span class=\"required\">*</span></span><input type=\"number\" min=\"1\" max=\"65535\" class=\"input-field\" name=\"mqtt_port\" value=\"\" required placeholder=\"8883\"/><br />"
       "<span>MQTT username <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_user\" value=\"\" required/><br />"
-      "<span>MQTT password <span class=\"required\">*</span></span><input type=\"password\" class=\"input-field\" name=\"pwd_mqtt\" id=\"pwd_mqtt\" value=\"\" required/><br />"
+      "<span>MQTT password </span><input type=\"password\" class=\"input-field\" name=\"pwd_mqtt\" id=\"pwd_mqtt\" value=\"\" /><br />"
       "<input type=\"checkbox\" onclick=\"toggleShowPass('pwd_mqtt')\">Show Password<br />"
       "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" size=\"60\" placeholder=\"00:AA:11:BB:22:CC:33:DD\" value=\"\" required/><br />"
-      "<hr><span>Config available in regular mode?</span><INPUT type=\"checkbox\" name=\"chk_configInSTA\" /><br /><br />"
+      "<hr><INPUT type=\"checkbox\" name=\"chk_configInSTA\" /><span>Config available in regular mode</span><br /><br />"
       "<span>&nbsp;</span><input type=\"submit\" value=\"Send\" name=\"submit\" /> <INPUT type=\"reset\"><br /><br />"
     "</form><hr><span>MAC-address: " + WiFi.macAddress() + "</span><br /><span>Temperature: " + temperature + "</span></div></body></html>";
 
@@ -101,7 +101,20 @@ void httpSavePOST() { //Handler
     message += "Arg no " + (String)i + " : ";  //Include the current iteration value
     message += server.argName(i) + ": ";     //Get the name of the parameter
     message += server.arg(i) + "\n";              //Get the value of the parameter
+
+    if (server.argName(i) == "hostname") {
+      hostname = server.arg(i);
+    }
+    else if (server.argName(i) == "ssid") {
+      ssid = server.arg(i);
+    }
+    else if (server.argName(i) == "pwd_Wifipass") {
+      pwd_Wifipass = server.arg(i);
+    }
   }
+
+  // Save to JSON-file
+  saveConfig();
 
   // For final version, where we present the correct root-site
   //server.send(200, "text / plain", INDEX_HTML);     //Response to the HTTP request

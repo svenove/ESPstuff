@@ -47,5 +47,6 @@ void loopSTA() {
 *  Loop-spesific for AP-mode
 ***********************************************/
 void loopAP() {
+  dnsServer.processNextRequest();
   server.handleClient();    //Handling of incoming requests to HTTP-server
 }

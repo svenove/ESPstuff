@@ -17,7 +17,7 @@
 #include <DoubleResetDetector.h>  // https://github.com/datacute/DoubleResetDetector
 #include <ESP8266WiFi.h>          // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi
 #include <ESP8266WebServer.h>     // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer
-#include <ESP8266mDNS.h>          // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266mDNS
+#include <DNSServer.h>            // https://github.com/esp8266/Arduino/blob/master/libraries/DNSServer
 #include <ArduinoJson.h>          // https://github.com/bblanchon/ArduinoJson
 #include <FS.h>                   // https://github.com/esp8266/Arduino/blob/master/cores/esp8266/FS.h
 #include <DHTesp.h>               // https://github.com/beegee-tokyo/DHTesp
@@ -40,8 +40,7 @@ DoubleResetDetector drd(DRD_TIMEOUT, DRD_ADDRESS);
 *  Webserver and DNS
 ***********************************************/
 ESP8266WebServer server(80);   //Web server object. Will be listening in port 80 (default for HTTP)
-MDNSResponder mdns;
-
+DNSServer dnsServer;
 
 /***********************************************
 *  DHT

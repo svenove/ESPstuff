@@ -88,15 +88,14 @@ void setupAP() {
     Serial.println("AP-mode entered successfully");
     Serial.println(WiFi.softAPIP());
 
-    char charBuf[hostname.length()+1];
-    hostname.toCharArray(charBuf, hostname.length());
-    if (mdns.begin(charBuf, WiFi.softAPIP())) {
-      Serial.println("MDNS responder started: " + hostname);
+    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    if (dnsServer.start(53, "*", WiFi.softAPIP())) {
+      Serial.println("Captive portal started");
     }
 
     server.on("/", httpHandleRoot);
     server.on("/savePOST", httpSavePOST); //Associate the handler function to the path
-    server.onNotFound(handleNotFound);
+    server.onNotFound(httpHandleRoot);
 
     server.begin();                                       //Start the HTTP-server
     Serial.println("Server listening");

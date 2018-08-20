@@ -52,9 +52,7 @@ void setupSTA() {
 
   Serial.print("SSID: ");
   Serial.println(charSSID);
-  Serial.print("WifiPwd: ");
-  Serial.println(charPwd);
-
+  
   WiFi.hostname(hostname);
   WiFi.begin(charSSID, charPwd); //Connect to the WiFi network
 

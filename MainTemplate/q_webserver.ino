@@ -8,6 +8,8 @@
 *  Show config-form on webserver-root (/)
 ***********************************************/
 void httpHandleRoot() {
+  initFS();
+  
   Serial.println("Serving HTTP-root.");
   // Server root site
 String INDEX_HTML = 
@@ -19,11 +21,18 @@ String INDEX_HTML =
     ".form-style-2 { max-width: 500px; padding: 20px 12px 10px 20px; font: 13px Arial, Helvetica, sans-serif; }"
     ".form-style-2 label > span{ width: 100px; font-weight: bold; float: left; padding-top: 8px; padding-right: 5px; }"
     ".form-style-2 span.required{ color:red; }"
-    "#static { display: none; }"
+    "#static { display: ";
+if (chk_DHCP) {
+  INDEX_HTML += "none";
+}
+else {
+  INDEX_HTML += "block";
+}
+    INDEX_HTML += "; }"
     "input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }"
   "</style><script>"
   "function showStatic(){\r\n"
-  "if (document.getElementById(\"staticcheck\").checked == true){\r\n"
+  "if (document.getElementById(\"chk_DHCP\").checked == true){\r\n"
     "document.getElementById('static').style.display ='none';\r\n"
   "} else {\r\n"
     "document.getElementById('static').style.display ='block';\r\n"
@@ -47,20 +56,20 @@ String INDEX_HTML =
   "<span>Password </span>"
   "<input type=\"password\" class=\"input-field\" name=\"pwd_Wifipass\" id=\"wifipass\" value=\"\" /><br />"
   "<input type=\"checkbox\" onclick=\"toggleShowPass('wifipass')\">Show Password<br />"
-      "<span>DHCP</span><INPUT type=\"checkbox\" id=\"staticcheck\" name=\"DHCP\" value=\"true\" onclick='showStatic();' checked ><br />"
+      "<span>DHCP</span>" + createCheckbox("chk_DHCP", chk_DHCP, "showStatic()") + "<br />"
         "<div id=\"static\">"
-        "<span>IP address <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"ip\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-        "<span>Netmask <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"submask\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-        "<span>Gateway <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"gw\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
-         "<span>DNS <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"dns\" value=\"\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+        "<span>IP address <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"ip\" value=\"" + ip + "\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+        "<span>Netmask <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"submask\" value=\"" + submask + "\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+        "<span>Gateway <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"gw\" value=\"" + gw + "\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
+         "<span>DNS <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"dns\" value=\"" + dns + "\" pattern=\"^([0-9]{1,3}\.){3}[0-9]{1,3}$\" /><br />"
           "</div><hr>"
-      "<span>MQTT server <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_server\" value=\"\" required/><br />"
-      "<span>MQTT port <span class=\"required\">*</span></span><input type=\"number\" min=\"1\" max=\"65535\" class=\"input-field\" name=\"mqtt_port\" value=\"\" required placeholder=\"8883\"/><br />"
-      "<span>MQTT username <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_user\" value=\"\" required/><br />"
+      "<span>MQTT server <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_server\" value=\"" + mqtt_server + "\" required/><br />"
+      "<span>MQTT port <span class=\"required\">*</span></span><input type=\"number\" min=\"1\" max=\"65535\" class=\"input-field\" name=\"mqtt_port\" value=\"" + mqtt_port + "\" required placeholder=\"8883\"/><br />"
+      "<span>MQTT username <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_user\" value=\"" + mqtt_user + "\" required/><br />"
       "<span>MQTT password </span><input type=\"password\" class=\"input-field\" name=\"pwd_mqtt\" id=\"pwd_mqtt\" value=\"\" /><br />"
       "<input type=\"checkbox\" onclick=\"toggleShowPass('pwd_mqtt')\">Show Password<br />"
-      "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" size=\"60\" placeholder=\"00:AA:11:BB:22:CC:33:DD\" value=\"\" required/><br />"
-      "<hr><INPUT type=\"checkbox\" name=\"chk_configInSTA\" /><span>Config available in regular mode</span><br /><br />"
+      "<span>MQTT TLS-fingerprint <span class=\"required\">*</span></span><input type=\"text\" class=\"input-field\" name=\"mqtt_tls_fingerprint\" size=\"60\" placeholder=\"00:AA:11:BB:22:CC:33:DD\" value=\"" + mqtt_tls_fingerprint + "\" required/><br />"
+      "<hr>" + createCheckbox("chk_configInSTA", chk_configInSTA) + "<br /><span>Config available in regular mode</span><br /><br />"
       "<span>&nbsp;</span><input type=\"submit\" value=\"Send\" name=\"submit\" /> <INPUT type=\"reset\"><br /><br />"
     "</form><hr><span>MAC-address: " + WiFi.macAddress() + "</span><br /><span>Temperature: " + temperature + "</span></div></body></html>";
 
@@ -83,15 +92,6 @@ void httpSavePOST() { //Handler
     if (server.argName(i) == "submit") {
       continue;
     }
-    // Change checkbox to a "boolean"
-    else if (server.argName(i).startsWith("chk_")) {
-      if (server.arg(i) == "on") {
-        server.arg(i) = "true";
-      }
-      else {
-        server.arg(i) = "false";
-      }
-    }
     // If a passwordfield is empty, don't save it
     else if (server.argName(i).startsWith("pwd_")) {
       if (server.arg(i) == "") {
@@ -102,6 +102,10 @@ void httpSavePOST() { //Handler
     message += server.argName(i) + ": ";     //Get the name of the parameter
     message += server.arg(i) + "\n";              //Get the value of the parameter
 
+    // A "checkbox" is only POSTed if checked. Initiate to "false" to handle that.
+    chk_DHCP = false;
+    chk_configInSTA = false;
+
     if (server.argName(i) == "hostname") {
       hostname = server.arg(i);
     }
@@ -111,10 +115,43 @@ void httpSavePOST() { //Handler
     else if (server.argName(i) == "pwd_Wifipass") {
       pwd_Wifipass = server.arg(i);
     }
+    else if (server.argName(i) == "chk_DHCP") {
+      chk_DHCP = true;
+    }
+    else if (server.argName(i) == "ip") {
+      ip = server.arg(i);
+    }
+    else if (server.argName(i) == "submask") {
+      submask = server.arg(i);
+    }
+    else if (server.argName(i) == "gw") {
+      gw = server.arg(i);
+    }
+    else if (server.argName(i) == "dns") {
+      dns = server.arg(i);
+    }
+    else if (server.argName(i) == "mqtt_server") {
+      mqtt_server = server.arg(i);
+    }
+    else if (server.argName(i) == "mqtt_port") {
+      mqtt_port = server.arg(i).toInt();
+    }
+    else if (server.argName(i) == "mqtt_user") {
+      mqtt_user = server.arg(i);
+    }
+    else if (server.argName(i) == "pwd_mqtt") {
+      pwd_mqtt = server.arg(i);
+    }
+    else if (server.argName(i) == "mqtt_tls_fingerprint") {
+      mqtt_tls_fingerprint = server.arg(i);
+    }
+    else if (server.argName(i) == "chk_configInSTA") {
+      chk_configInSTA = true;
+    }
   }
 
   // Save to JSON-file
-  saveConfig();
+  //saveConfig();
 
   // For final version, where we present the correct root-site
   //server.send(200, "text / plain", INDEX_HTML);     //Response to the HTTP request
@@ -143,3 +180,21 @@ void httpReturnOK() {
   server.sendHeader("Connection", "close");
   server.send(200, "text/plain", "OK\r\n");
 }
+
+String createCheckbox(String name, bool checked) {
+  return createCheckbox(name, checked, "");
+}
+
+String createCheckbox(String name, bool checked, String onClick) {
+  String html = "<INPUT type=\"checkbox\" id=\"" + name + "\" name=\"" + name + "\"";
+  if (onClick != "") {
+    html += " onclick='" + onClick + ";'";
+  }
+  if (checked) {
+    html += " checked";
+  }
+  html += " />";
+
+  return html;
+}
+

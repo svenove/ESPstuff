@@ -80,14 +80,14 @@ void setupSTA() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());  //Print the local IP to access the server
 
- // <<<<<<<<<<<<<< TESTING >>>>>>>>>>>>>>>>>
-  server.on("/", httpHandleRoot);
-  server.on("/savePOST", httpSavePOST); //Associate the handler function to the path
-  server.onNotFound(handleNotFound);
+  if (chk_configInSTA) {
+    server.on("/", httpHandleRoot);
+    server.on("/savePOST", httpSavePOST); //Associate the handler function to the path
+    server.onNotFound(httpHandleRoot);
 
-  server.begin();                                       //Start the HTTP-server
-  Serial.println("Server listening");
- // <<<<<<<<<<<<<< TESTING >>>>>>>>>>>>>>>>> 
+    server.begin();                                       //Start the HTTP-server
+    Serial.println("Server listening");
+  }
 
   dht.setup(dhtpin, DHTesp::DHT22); // Connect DHT sensor
 }

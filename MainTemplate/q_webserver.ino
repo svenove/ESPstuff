@@ -8,8 +8,7 @@
 *  Show config-form on webserver-root (/)
 ***********************************************/
 void httpHandleRoot() {
-  initFS();
-  
+
   Serial.println("Serving HTTP-root.");
   // Server root site
 String INDEX_HTML = 

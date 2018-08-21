@@ -30,12 +30,11 @@ void setup() {
   else {
     Serial.println("Double Reset NOT Detected, setting builtin LED to high");
     digitalWrite(LED_BUILTIN, HIGH);
-    digitalWrite(D4, HIGH);
+//    digitalWrite(D4, HIGH);
     
     // Configure WIFI STA
     setupSTA();
-    }
- 
+  } 
 } // end setup
 
 
@@ -52,6 +51,23 @@ void setupSTA() {
 
   Serial.print("SSID: ");
   Serial.println(charSSID);
+
+  // If static IP
+  if (!chk_DHCP) {
+    IPAddress ipObj;
+    ipObj.fromString(ip);
+
+    IPAddress subObj;
+    subObj.fromString(submask);
+
+    IPAddress gwObj;
+    gwObj.fromString(gw);
+
+    IPAddress dnsObj;
+    dnsObj.fromString(dns);
+
+    WiFi.config(ipObj, dnsObj, gwObj, subObj); 
+  }
   
   WiFi.hostname(hostname);
   WiFi.begin(charSSID, charPwd); //Connect to the WiFi network

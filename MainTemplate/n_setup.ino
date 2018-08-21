@@ -30,7 +30,7 @@ void setup() {
   else {
     Serial.println("Double Reset NOT Detected, setting builtin LED to high");
     digitalWrite(LED_BUILTIN, HIGH);
-//    digitalWrite(D4, HIGH);
+    digitalWrite(D4, HIGH);
     
     // Configure WIFI STA
     setupSTA();
